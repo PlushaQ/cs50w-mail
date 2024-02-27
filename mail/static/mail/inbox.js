@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-  // Use buttons to toggle between views
+  // Event listeners for navigation buttons
   document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
   document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
   load_mailbox('inbox');
 });
 
+// Function to change the view (e.g., emails, single email, compose)
 function change_view(view) {
+
  // Hide all views initially
  document.querySelector('#single-email-view').style.display = 'none';
  document.querySelector('#emails-view').style.display = 'none';
@@ -29,7 +31,7 @@ function change_view(view) {
  }
 }
 
-
+// Function to display the compose email form
 function compose_email() {
 
   // Show compose view and hide other views
@@ -59,7 +61,7 @@ function change_read_status(mail) {
   })
 }
 
-function archive_mail(mail) {
+function change_archive_status(mail) {
   console.log(mail)
   return fetch(`/emails/${mail.id}`, {
   method: 'PUT',
@@ -67,24 +69,34 @@ function archive_mail(mail) {
     {
       archived: !mail.archived
     })
-  }).then(
+  }).then( () => {
+    if (!mail.archived) {
     load_mailbox('archive')
+  }
+  else {
+    load_mailbox('inbox')
+  }}
   )
 }
 
+// Function to populate the compose form for replying to an email
 function reply(mail) {
   change_view('compose')
 
+  // Check if the subject starts with "RE: " and add it if not
   if (!mail.subject.startsWith('RE: ')){
     mail.subject = "RE: " + mail.subject
 } 
+  // Create body for reply including original message 
   let body = `\n\n On the ${mail.timestamp} ${mail.sender} wrote: \n \t "${mail.body}"`
 
+  // Populate compose form fields with reply information
   document.querySelector('#compose-recipients').value = `${mail.sender}`;
   document.querySelector('#compose-subject').value = `${mail.subject}`;
   document.querySelector('#compose-body').value = `${body}`;
 }
 
+// Function to display a single email
 function show_single_email(mail) {
   singleEmailView = document.querySelector('#single-email-view');
   singleEmailView.innerHTML = `
@@ -98,7 +110,8 @@ function show_single_email(mail) {
   <button id="reply-button" class="btn btn-primary">Reply</button> 
   <button id="archive-button" class="btn btn-${mail.archived ? "success": 'danger'}">${mail.archived ? 'Unarchive': 'Archive'}</button>
 `
-  document.querySelector('#archive-button').addEventListener('click', () => archive_mail(mail));
+  // Add event listeners for reply and archive buttons
+  document.querySelector('#archive-button').addEventListener('click', () => change_archive_status(mail));
   document.querySelector('#reply-button').addEventListener('click', () => reply(mail))
 }
 
@@ -117,6 +130,8 @@ function process_single_email(email_id) {
       show_single_email(mail)
     )}
 
+
+// Function to fetch emails for a specific mailbox
 function get_emails_for_inbox(mailbox) {
   return fetch(`/emails/${mailbox}`)
   .then(response => response.json())
@@ -126,6 +141,7 @@ function get_emails_for_inbox(mailbox) {
 });
 }
 
+// Function to display emails in a mailbox
 function show_emails(mailbox) {
   const emailsView = document.getElementById('emails-view');
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
@@ -134,6 +150,7 @@ function show_emails(mailbox) {
   .then(emails => {
     emails.forEach(email => {
       const emailDiv = document.createElement('div');
+      // Display sent emails differently
       if (mailbox === 'sent') {
       emailDiv.innerHTML = `
         <span class="sender">To: ${email.recipients.join(', ')}</span><br>
@@ -147,9 +164,11 @@ function show_emails(mailbox) {
         <div class="body">${email.body}</div>
       `;
       }
+      // Add read/unread class based on email status
       emailDiv.classList.add('email');
       emailDiv.classList.add(email.read ? 'read': 'unread');
       emailsView.appendChild(emailDiv);
+      
       emailDiv.addEventListener('click', function () {
         process_single_email(email.id)
       })
