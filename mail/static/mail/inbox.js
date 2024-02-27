@@ -45,29 +45,61 @@ function compose_email() {
 function get_single_mail(email_id) {
   return fetch(`/emails/${email_id}`)
   .then(response => response.json())
-  .then(email => {
-      return email;
+  .then(mail => {
+      return mail;
   });
 }
 
-function change_read_status(email) {
-  return fetch(`/emails/${email.id}`, {
+function change_read_status(mail) {
+  return fetch(`/emails/${mail.id}`, {
     method: 'PUT',
     body: JSON.stringify({
-        read: !email.read
+        read: !mail.read
     })
   })
+}
+
+function archive_mail(mail) {
+  console.log(mail)
+  return fetch(`/emails/${mail.id}`, {
+  method: 'PUT',
+  body: JSON.stringify(
+    {
+      archived: !mail.archived
+    })
+  }).then(
+    load_mailbox('archive')
+  )
+}
+
+function reply(mail) {
+  change_view('compose')
+
+  if (!mail.subject.startsWith('RE: ')){
+    mail.subject = "RE: " + mail.subject
+} 
+  let body = `\n\n On the ${mail.timestamp} ${mail.sender} wrote: \n \t "${mail.body}"`
+
+  document.querySelector('#compose-recipients').value = `${mail.sender}`;
+  document.querySelector('#compose-subject').value = `${mail.subject}`;
+  document.querySelector('#compose-body').value = `${body}`;
 }
 
 function show_single_email(mail) {
   singleEmailView = document.querySelector('#single-email-view');
   singleEmailView.innerHTML = `
   <div class="email-details">
-  <h2 class="email-subject">${mail.subject}</h2>
   <p class="email-info"><span class="email-info-label">From:</span> ${mail.sender}</p>
+  <p class="email-info"><span class="email-info-label">To:</span> ${mail.recipients.join(', ')}</p>
+  <p class="email-info"><span class="email-info-label">Send on: </span>${mail.timestamp}</p>
+  <h2 class="email-subject">Subject: ${mail.subject}</h2>
   <div class="email-body">${mail.body}</div>
   </div>
+  <button id="reply-button" class="btn btn-primary">Reply</button> 
+  <button id="archive-button" class="btn btn-${mail.archived ? "success": 'danger'}">${mail.archived ? 'Unarchive': 'Archive'}</button>
 `
+  document.querySelector('#archive-button').addEventListener('click', () => archive_mail(mail));
+  document.querySelector('#reply-button').addEventListener('click', () => reply(mail))
 }
 
 function process_single_email(email_id) {
@@ -102,11 +134,19 @@ function show_emails(mailbox) {
   .then(emails => {
     emails.forEach(email => {
       const emailDiv = document.createElement('div');
+      if (mailbox === 'sent') {
       emailDiv.innerHTML = `
+        <span class="sender">To: ${email.recipients.join(', ')}</span><br>
+        <span class="subject">Subject: ${email.subject}</span><br>
+        <div class="body">${email.body}</div>
+      `;}
+      else {
+        emailDiv.innerHTML = `
         <span class="sender">From: ${email.sender}</span><br>
         <span class="subject">Subject: ${email.subject}</span><br>
         <div class="body">${email.body}</div>
       `;
+      }
       emailDiv.classList.add('email');
       emailDiv.classList.add(email.read ? 'read': 'unread');
       emailsView.appendChild(emailDiv);
