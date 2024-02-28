@@ -62,7 +62,6 @@ function change_read_status(mail) {
 }
 
 function change_archive_status(mail) {
-  console.log(mail)
   return fetch(`/emails/${mail.id}`, {
   method: 'PUT',
   body: JSON.stringify(
@@ -136,7 +135,6 @@ function get_emails_for_inbox(mailbox) {
   return fetch(`/emails/${mailbox}`)
   .then(response => response.json())
   .then(emails => {
-    console.log(emails)
     return emails; 
 });
 }
@@ -216,7 +214,6 @@ function send_mail_to_server_and_return_response() {
   })
   .then(response => response.json())
   .then(result => {
-      // Print result
       console.log(result);
   });
 }
