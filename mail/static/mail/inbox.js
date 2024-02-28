@@ -62,7 +62,6 @@ function change_read_status(mail) {
 }
 
 function change_archive_status(mail) {
-  console.log(mail)
   return fetch(`/emails/${mail.id}`, {
   method: 'PUT',
   body: JSON.stringify(
@@ -136,7 +135,6 @@ function get_emails_for_inbox(mailbox) {
   return fetch(`/emails/${mailbox}`)
   .then(response => response.json())
   .then(emails => {
-    console.log(emails)
     return emails; 
 });
 }
@@ -144,40 +142,49 @@ function get_emails_for_inbox(mailbox) {
 // Function to display emails in a mailbox
 function show_emails(mailbox) {
   const emailsView = document.getElementById('emails-view');
-  document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
-  
+  emailsView.innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+
   get_emails_for_inbox(mailbox)
-  .then(emails => {
-    emails.forEach(email => {
-      const emailDiv = document.createElement('div');
-      // Display sent emails differently
-      if (mailbox === 'sent') {
-      emailDiv.innerHTML = `
-        <span class="sender">To: ${email.recipients.join(', ')}</span><br>
-        <span class="subject">Subject: ${email.subject}</span><br>
-        <div class="body">${email.body}</div>
-      `;}
-      else {
+    .then(emails => {
+      if (!emails || emails.length === 0) {
+        const emailDiv = document.createElement('div');
+        emailDiv.id = 'no-messages';
         emailDiv.innerHTML = `
-        <span class="sender">From: ${email.sender}</span><br>
-        <span class="subject">Subject: ${email.subject}</span><br>
-        <div class="body">${email.body}</div>
-      `;
+          <h2>No messages in ${mailbox} mailbox</h2>
+          <p>Please check back later.</p>
+        `;
+        emailsView.appendChild(emailDiv);
+      } else {
+        emails.forEach(email => {
+          const emailDiv = document.createElement('div');
+          if (mailbox === 'sent') {
+            emailDiv.innerHTML = `
+              <span class="sender">To: ${email.recipients.join(', ')}</span><br>
+              <span class="subject">Subject: ${email.subject}</span><br>
+              <div class="body">${email.body}</div>
+            `;
+          } else {
+            emailDiv.innerHTML = `
+              <span class="sender">From: ${email.sender}</span><br>
+              <span class="subject">Subject: ${email.subject}</span><br>
+              <div class="body">${email.body}</div>
+            `;
+          }
+          emailDiv.classList.add('email');
+          emailDiv.classList.add(email.read ? 'read': 'unread');
+          emailsView.appendChild(emailDiv);
+
+          emailDiv.addEventListener('click', function () {
+            process_single_email(email.id);
+          });
+        });
       }
-      // Add read/unread class based on email status
-      emailDiv.classList.add('email');
-      emailDiv.classList.add(email.read ? 'read': 'unread');
-      emailsView.appendChild(emailDiv);
-      
-      emailDiv.addEventListener('click', function () {
-        process_single_email(email.id)
-      })
-    });
     })
-  .catch(error => {
-    console.error('Error fetching emails:', error);
-  });
+    .catch(error => {
+      console.error('Error fetching emails:', error);
+    });
 }
+
 
 function load_mailbox(mailbox) {
   
@@ -216,7 +223,6 @@ function send_mail_to_server_and_return_response() {
   })
   .then(response => response.json())
   .then(result => {
-      // Print result
       console.log(result);
   });
 }
