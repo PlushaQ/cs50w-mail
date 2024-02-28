@@ -54,3 +54,12 @@ textarea {
   .email-body {
     white-space: pre-wrap;
   }
+
+  #no-messages {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
